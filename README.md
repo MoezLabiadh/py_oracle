@@ -1,3 +1,3 @@
 # py_oracle
 
-Python recipes for Oracle database connextion and query.
+Python recipes for Oracle database connection and query.
