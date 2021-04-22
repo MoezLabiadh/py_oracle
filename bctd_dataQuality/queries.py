@@ -1,4 +1,4 @@
-ef make_sql_string (BA,ubi_list):
+def make_sql_string (BA,ubi_list):
     """returns SQL strings needed to execute the Queries"""
     # make TSO code strings
     if BA == 'ALL':
