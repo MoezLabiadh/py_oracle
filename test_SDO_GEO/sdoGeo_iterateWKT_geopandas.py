@@ -1,7 +1,25 @@
+"""
+This Script runs Spatial Oracle Queries against external shapes.
+ 
+Main steps:
+    1. Connect to Database (BCGW).
+    2. Convert ESRI format shape to Geopandas format. 
+    3. Retireve Geometry WKT string and Spatial ref. for each feature.
+    4. Run the SQL Query.
+    5. Export Query Results to an Excel file.
+    
+The query used in this recipe is looking for Active Crown Tenures
+intersecting with an AOI - SDO_RELATE (ANYINTERACT). Customize the "sql" parameter 
+for other types of Queries.
+
+"""
+
 import os
-import geopandas as gpd
 import cx_Oracle
 import pandas as pd
+#import fiona
+import geopandas as gpd
+
 
 def connect_to_DB (username,password,hostname):
     """ Returns a connection to Oracle database"""
@@ -13,29 +31,70 @@ def connect_to_DB (username,password,hostname):
 
     return connection
 
-def get_wkt_srid (fc):
-    """Returns the SRID and WKT string of each feature of a shapefile"""
-    gdf = gpd.read_file(fc)
-    gdf['wkt'] = gdf.apply(lambda row:row['geometry'].wkt, axis=1)
+
+def esri_to_gdf (inp):
+    """Returns a Geopandas file (gdf) based on 
+       an ESRI format vector (shp or featureclass/gdb)"""
+    
+    if '.shp' in inp: 
+        gdf = gpd.read_file(inp)
+    
+    elif '.gdb' in inp:
+        l = inp.split ('.gdb')
+        gdb = l[0] + '.gdb'
+        fc = os.path.basename(inp)
+        gdf = gpd.read_file(filename= gdb, layer= fc)
+        
+    else:
+        raise Exception ('Format not recognized. Please provide and shp or feature class (gdb)')
+    
+    return gdf
+    
+      
+def get_wkt_srid (gdf):
+    """Returns the SRID and WKT string of each feature in a gdf"""
+    
+    #gdf['wkt'] = gdf.apply(lambda row:row['geometry'].wkt, axis=1)
+    
     srid = gdf.crs.to_epsg()
+    if srid != 3005:
+        raise Exception ('Shape should be in BC Albers Projection.')
+    
+    # Generate WKT strings. 
+    #If WKT string is larger then 4000 characters (ORACLE VARCHAR limit), 
+    # Algorithm will simplify the geometry.
     
     wkt_dict = {}
     
     for index, row in gdf.iterrows():
-        wkt = row['wkt']
-        if len (wkt) <= 4000:
-            print ('WKT returned for feature {} - under 4000 characters '.format (str(index)))
-            f = 'feature '+ str(index) # Replace index with another ID column (name ?)
+        f = 'feature '+ str(index) # Replace index with another another ID column (name ?)
+        wkt = row['geometry'].wkt
+    
+        if len (wkt) < 4000:
+            print ('FULL WKT returned for {} - within Oracle VARCHAR limit'.format (f)) 
             wkt_dict [f] = wkt
+    
         else:
-            print ('WKT NOT returned for feature {} more than 4000 characters'.format (str(index)))
-            continue
+            print ('Geometry will be Simplified for {} - beyond Oracle VARCHAR limit'.format (f))
+    
+            for s in range (10, 10000, 10):
+                wkt_sim = row['geometry'].simplify(s).wkt
+    
+                if len(wkt_sim) < 4000:
+                    break
+                
+            print ('Geometry Simplified with Tolerance {} m'.format (s))            
+            wkt_dict [f] = wkt_sim 
+                
+            #Option B: just generate an Envelope Geometry
+            #wkt_env = row['geometry'].envelope.wkt
+            #wkt_dict [f] = wkt_env
 
     return wkt_dict, srid
 
 
 def read_query(connection,query):
-    "Returns a df containing results of SQL Query "
+    "Returns a df containing result of SQL Query "
     cursor = connection.cursor()
     try:
         cursor.execute(query)
@@ -46,6 +105,7 @@ def read_query(connection,query):
     finally:
         if cursor is not None:
             cursor.close()
+   
             
 def generate_report (workspace, df_list, sheet_list, filename):
     """ Exports dataframes to multi-tab excel spreasheet"""
@@ -76,19 +136,20 @@ def generate_report (workspace, df_list, sheet_list, filename):
 
 
 def main ():
-    wks = r'\\spatialfiles.bcgov\Work\lwbc\visr\Workarea\moez_labiadh\TOOLS\SCRIPTS\RECIPES\WKT_geoPandas'
-    fc = os.path.join(wks, 'test.shp')
+    inp = r"\\spatialfiles.bcgov\Work\lwbc\visr\Workarea\moez_labiadh\DATASETS\local_data.gdb\Admin\Aqua_finFish_Broughton_zone"
     
     hostname = 'bcgw.bcgov/idwprod1.bcgov'
     bcgw_user = os.getenv('bcgw_user')
     bcgw_pwd = os.getenv('bcgw_pwd')
     
-    print ('Connecting to BCGW')
+    print ('Connecting to BCGW...')
     connection = connect_to_DB (bcgw_user,bcgw_pwd,hostname)
     
-    print ('Getting WKT')
+    print ('\nReading the input file...')
+    gdf = esri_to_gdf (inp)
     
-    wkt_dict, srid = get_wkt_srid (fc)
+    print ('\nGetting WKT and SRID...')
+    wkt_dict, srid = get_wkt_srid (gdf)
     
     
     sql =  """
@@ -100,7 +161,7 @@ def main ():
                             'mask=ANYINTERACT') = 'TRUE'
             """
     
-    print ('Running SQL')
+    print ('\nRunning SQL...')
     dfs = []
     keys = []
     
@@ -112,6 +173,8 @@ def main ():
     
     sheets = ['Intersect Feature ' + k for k in keys]
     
+    print ('\nExporting Query Results...')
+    wks = r'\\spatialfiles.bcgov\Work\lwbc\visr\Workarea\moez_labiadh\TOOLS\SCRIPTS\RECIPES\WKT_geoPandas'
     generate_report (wks, dfs, sheets, 'Query_Results')
 
 
