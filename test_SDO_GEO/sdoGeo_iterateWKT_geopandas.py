@@ -46,7 +46,7 @@ def esri_to_gdf (inp):
         gdf = gpd.read_file(filename= gdb, layer= fc)
         
     else:
-        raise Exception ('Format not recognized. Please provide and shp or feature class (gdb)')
+        raise Exception ('Format not recognized. Please provide an shp or featureclass (gdb)')
     
     return gdf
     
@@ -58,14 +58,13 @@ def get_wkt_srid (gdf):
     
     srid = gdf.crs.to_epsg()
     if srid != 3005:
-        raise Exception ('Shape should be in BC Albers Projection.')
+        raise Exception ('Shape must be in BC Albers Projection.')
     
     # Generate WKT strings. 
     #If WKT string is larger then 4000 characters (ORACLE VARCHAR limit), 
     # Algorithm will simplify the geometry.
     
     wkt_dict = {}
-    
     for index, row in gdf.iterrows():
         f = 'feature '+ str(index) # Replace index with another another ID column (name ?)
         wkt = row['geometry'].wkt
@@ -76,13 +75,10 @@ def get_wkt_srid (gdf):
     
         else:
             print ('Geometry will be Simplified for {} - beyond Oracle VARCHAR limit'.format (f))
-    
             for s in range (10, 10000, 10):
                 wkt_sim = row['geometry'].simplify(s).wkt
-    
                 if len(wkt_sim) < 4000:
-                    break
-                
+                    break                
             print ('Geometry Simplified with Tolerance {} m'.format (s))            
             wkt_dict [f] = wkt_sim 
                 
@@ -164,7 +160,6 @@ def main ():
     print ('\nRunning SQL...')
     dfs = []
     keys = []
-    
     for k, v in wkt_dict.items():
         query = sql.format(w = v,  s = srid)
         df = read_query(connection,query)
@@ -174,7 +169,7 @@ def main ():
     sheets = ['Intersect Feature ' + k for k in keys]
     
     print ('\nExporting Query Results...')
-    wks = r'\\spatialfiles.bcgov\Work\lwbc\visr\Workarea\moez_labiadh\TOOLS\SCRIPTS\RECIPES\WKT_geoPandas'
+    wks = r'\\spatialfiles.bcgov\Work\...\WKT_geoPandas'
     generate_report (wks, dfs, sheets, 'Query_Results')
 
 
