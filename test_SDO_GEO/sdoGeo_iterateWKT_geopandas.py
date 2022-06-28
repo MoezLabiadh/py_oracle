@@ -61,7 +61,7 @@ def esri_to_gdf (aoi):
         gdf = gpd.read_file(filename= gdb, layer= fc)
         
     else:
-        raise Exception ('Format not recognized. Please provide and shp or feature class (gdb)')
+        raise Exception ('Format not recognized. Please provide a shp or featureclass (gdb)')
     
     return gdf
     
@@ -73,29 +73,29 @@ def get_wkt_srid (gdf):
     
     srid = gdf.crs.to_epsg()
     if srid != 3005:
-        raise Exception ('Shape should be in BC Albers Projection.')
+        raise Exception ('Shape must be in BC Albers Projection!')
     
     # Generate WKT strings. 
-    #If WKT string is larger then 4000 characters (ORACLE VARCHAR limit), 
-    # Algorithm will simplify the geometry.
+    #If WKT string is larger then 4000 characters (ORACLE VARCHAR2 limit), 
+     # OPTION A: algorithm will simplify the geometry until limit is reached.
     
     wkt_dict = {}
     for index, row in gdf.iterrows():
-        f = 'feature '+ str(index) # Replace index with another another ID column (name ?)
+        f = 'feature '+ str(index) # Replace index with another ID column (name ?)
         wkt = row['geometry'].wkt
     
-        if len (wkt) < 4000:
-            print ('FULL WKT returned for {} - within Oracle VARCHAR limit'.format (f)) 
+        if len(wkt) < 4000:
+            print ('{} - FULL WKT returned: within Oracle VARCHAR limit'.format(f)) 
             wkt_dict [f] = wkt
             
         else:
-            print ('Geometry will be Simplified for {} - beyond Oracle VARCHAR limit'.format (f))
+            print ('{} - Geometry will be Simplified: Oracle VARCHAR limit exceeded'.format(f))
             for s in range (10, 10000, 10):
                 wkt_sim = row['geometry'].simplify(s).wkt
                 if len(wkt_sim) < 4000:
                     break
                 
-            print ('Geometry Simplified with Tolerance {} m'.format (s))            
+            print ('Geometry Simplified - Tolerance {} m'.format (s))            
             wkt_dict [f] = wkt_sim 
                 
             #Option B: just generate an Envelope Geometry
@@ -148,7 +148,7 @@ def generate_report (workspace, df_list, sheet_list, filename):
 
 
 def main ():
-    aoi= r"\\spatialfiles.bcgov\Work\...\local_data.gdb\Admin\Aqua_finFish_Broughton_zone"
+    aoi= r"\\spatialfiles.bcgov\Work\lwbc\visr\Workarea\moez_labiadh\DATASETS\local_data.gdb\Admin\Aqua_finFish_Broughton_zone"
     
     hostname = 'bcgw.bcgov/idwprod1.bcgov'
     bcgw_user = os.getenv('bcgw_user')
@@ -163,7 +163,6 @@ def main ():
     print ('\nGetting WKT and SRID...')
     wkt_dict, srid = get_wkt_srid (gdf)
     
-    
     sql =  """
             SELECT*
             FROM WHSE_TANTALIS.TA_CROWN_TENURES_SVW t
@@ -177,14 +176,14 @@ def main ():
     dfs = []
     keys = []
     for k, v in wkt_dict.items():
-        query = sql.format(w = v,  s = srid)
+        query = sql.format(w= v,  s= srid)
         df = read_query(connection,query)
         dfs.append(df)
         keys.append(k)  
     sheets = ['Intersect ' + k for k in keys]
     
     print ('\nExporting Query Results...')
-    out_loc = r'\\spatialfiles.bcgov\Work\...\outputs'
+    out_loc = r'\\spatialfiles.bcgov\Work\lwbc\visr\Workarea\moez_labiadh\TOOLS\SCRIPTS\RECIPES\WKT_geoPandas'
     generate_report (out_loc, dfs, sheets, 'Query_Results')
 
 
