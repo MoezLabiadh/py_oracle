@@ -89,13 +89,15 @@ def get_wkt_srid (gdf):
             wkt_dict [f] = wkt
             
         else:
-            print ('{} - Geometry will be Simplified: Oracle VARCHAR limit exceeded'.format(f))
-            for s in range (10, 10000, 10):
+            print ('Geometry will be Simplified for {} - beyond Oracle VARCHAR limit'.format (f))
+            s = 50
+            wkt_sim = row['geometry'].simplify(s).wkt
+
+            while len(wkt_sim) > 4000:
+                s += 10
                 wkt_sim = row['geometry'].simplify(s).wkt
-                if len(wkt_sim) < 4000:
-                    break
-                
-            print ('Geometry Simplified - Tolerance {} m'.format (s))            
+
+            print ('Geometry Simplified with Tolerance {} m'.format (s))            
             wkt_dict [f] = wkt_sim 
                 
             #Option B: just generate an Envelope Geometry
@@ -106,7 +108,7 @@ def get_wkt_srid (gdf):
 
 
 def read_query(connection,query):
-    "Returns a df containing result of SQL Query "
+    "Returns a df containing SQL Query results"
     cursor = connection.cursor()
     try:
         cursor.execute(query)
@@ -134,11 +136,10 @@ def generate_report (workspace, df_list, sheet_list, filename):
         worksheet = writer.sheets[sheet]
 
         worksheet.set_column(0, dataframe.shape[1], 20)
-
+        
         col_names = [{'header': col_name} for col_name in dataframe.columns[1:-1]]
         col_names.insert(0,{'header' : dataframe.columns[0], 'total_string': 'Total'})
         col_names.append ({'header' : dataframe.columns[-1], 'total_function': 'count'})
-
 
         worksheet.add_table(0, 0, dataframe.shape[0]+1, dataframe.shape[1]-1, {
             'total_row': True,
@@ -148,7 +149,7 @@ def generate_report (workspace, df_list, sheet_list, filename):
 
 
 def main ():
-    aoi= r"\\spatialfiles.bcgov\Work\lwbc\visr\Workarea\moez_labiadh\DATASETS\local_data.gdb\Admin\Aqua_finFish_Broughton_zone"
+    aoi= r"\\spatialfiles.bcgov\Work\...\local_data.gdb\Admin\Aqua_finFish_Broughton_zone"
     
     hostname = 'bcgw.bcgov/idwprod1.bcgov'
     bcgw_user = os.getenv('bcgw_user')
@@ -178,12 +179,16 @@ def main ():
     for k, v in wkt_dict.items():
         query = sql.format(w= v,  s= srid)
         df = read_query(connection,query)
-        dfs.append(df)
-        keys.append(k)  
-    sheets = ['Intersect ' + k for k in keys]
+        
+        if df.shape [0] < 1:
+            print ('Feature {} table is empy - No results exported')
+        else:
+            dfs.append(df)
+            keys.append(k)  
     
     print ('\nExporting Query Results...')
-    out_loc = r'\\spatialfiles.bcgov\Work\lwbc\visr\Workarea\moez_labiadh\TOOLS\SCRIPTS\RECIPES\WKT_geoPandas'
+    out_loc = r'\\spatialfiles.bcgov\Work\...\outputs'
+    sheets = ['Intersect ' + k for k in keys]
     generate_report (out_loc, dfs, sheets, 'Query_Results')
 
 
