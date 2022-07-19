@@ -28,7 +28,28 @@ FROM
  WHERE pip.CNSLTN_AREA_NAME = q'[Hul'qumi'num Nations - Marine Territory]'
    AND ipr.INTRID_SID IN (XXXXXX);
    
-   
+
+
+-- Relate 2 (Nested Queries)
+SELECT*
+
+FROM
+WHSE_TANTALIS.TA_CROWN_TENURES_SVW ipr
+INNER JOIN WHSE_ADMIN_BOUNDARIES.PIP_CONSULTATION_AREAS_SP pip 
+ON SDO_RELATE (pip.SHAPE, ipr.SHAPE, 'mask=ANYINTERACT') = 'TRUE'
+
+WHERE ipr.INTRID_SID IN ( SELECT ipr2.INTRID_SID
+                           FROM
+                           WHSE_TANTALIS.TA_CROWN_TENURES_SVW ipr2
+                             INNER JOIN WHSE_ADMIN_BOUNDARIES.PIP_CONSULTATION_AREAS_SP pip 
+                           ON SDO_RELATE (pip.SHAPE, ipr.SHAPE, 'mask=ANYINTERACT') = 'TRUE'
+                           
+                            WHERE pip.CNSLTN_AREA_NAME = q'[Shishalh (Sechelt) First Nation]'
+                            AND ipr2.INTRID_SID IN (XXXX)
+                            );
+
+
+
 -- Nearest Neighbor
 SELECT ten.INTRID_SID, pp.PID, pp.OWNER_TYPE,  ROUND(SDO_NN_DISTANCE(1),1) PROXIMITY_METERS 
 
