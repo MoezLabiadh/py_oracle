@@ -82,3 +82,8 @@ WHERE ten.INTRID_SID = XXXX
    
    
    
+   
+ -- Nearest Neighbor. Distance between two Geometries
+SELECT SDO_GEOM.SDO_DISTANCE(ten.SHAPE, SDO_GEOMETRY('{wkt}', {srid}), 0.005, 'unit=meter') PROXIMITY_METERS 
+FROM WHSE_TANTALIS.TA_INTEREST_PARCEL_SHAPES ten
+WHERE ten.INTRID_SID = 134943;
