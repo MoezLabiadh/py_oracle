@@ -11,6 +11,24 @@ FROM
    WHERE aid.NAVIGATIONAL_AID_ID IN (700,701,704,708,684,678,675)
      AND  SDO_WITHIN_DISTANCE (ipr.SHAPE, aid.GEOMETRY, 'distance=200 unit=m') = 'TRUE';
      
+ 
+ 
+ --Within Distance (with formatted output)
+ SELECT b.PID, b.OWNER_TYPE, b.PARCEL_CLASS,
+       CASE WHEN SDO_GEOM.SDO_DISTANCE(b.SHAPE, a.SHAPE, 0.5) = 0 
+              THEN 'INTERSECT' 
+                ELSE 'Within ' || TO_CHAR(ROUND(SDO_GEOM.SDO_DISTANCE(b.SHAPE, a.SHAPE, 0.5),0) || ' m')
+                  END AS OVERLAY_RESULT
+
+FROM WHSE_TANTALIS.TA_CROWN_TENURES_SVW a, 
+     WHSE_CADASTRE.PMBC_PARCEL_FABRIC_POLY_FA_SVW b
+
+WHERE a.CROWN_LANDS_FILE = '1404764'
+    AND a.DISPOSITION_TRANSACTION_SID = 937294
+    AND a.INTRID_SID = 970611
+    AND b.OWNER_TYPE = 'Private'
+    AND SDO_WITHIN_DISTANCE (b.SHAPE, a.SHAPE,'distance = 500') = 'TRUE';
+    
      
     
     
