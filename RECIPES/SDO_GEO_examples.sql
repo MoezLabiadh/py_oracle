@@ -1,5 +1,16 @@
---Within Distance
+--Get the Geometry Column name of a Spatial table
+ SELECT column_name GEOM_NAME
+ FROM  ALL_SDO_GEOM_METADATA
+ WHERE owner = 'WHSE_FOREST_VEGETATION'
+    AND table_name = 'RSLT_OPENING_SVW';
 
+--Get the SRID of a Spatial table
+SELECT s.GEOMETRY.sdo_srid SP_REF
+FROM WHSE_FOREST_TENURE.FTEN_MAP_NOTATN_POINTS_SVW s
+WHERE rownum = 1;
+
+
+--Within Distance
 SELECT
    aid.NAVIGATIONAL_AID_ID, ipr.INTRID_SID, ipr.TRANSACTION_SID,
    ROUND(SDO_GEOM.SDO_DISTANCE(ipr.SHAPE, aid.GEOMETRY, 0.005),2) DISTANCE
