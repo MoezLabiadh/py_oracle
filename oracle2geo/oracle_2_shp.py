@@ -39,7 +39,7 @@ def df_2_gdf (df, crs):
     gdf = gpd.GeoDataFrame(df, geometry = df['geometry'])
     
     gdf.crs = "EPSG:" + str(crs)
-    del df['SHAPE']
+    del gdf['SHAPE']
     
     return gdf
 
@@ -120,7 +120,7 @@ def load_sql():
     return sql              
 
   
-def main ():
+if __name__ == "__main__":
     print ('Connecting to BCGW.')
     hostname = 'bcgw.bcgov/idwprod1.bcgov'
     bcgw_user = os.getenv('bcgw_user')
@@ -131,8 +131,8 @@ def main ():
     sql = load_sql()
     df = pd.read_sql(sql['q'], connection)           
     gdf = df_2_gdf (df, 3005)
+    df.drop(columns=['SHAPE', 'geometry'], inplace=True)
                
     print ('Export to shapefile')      
-    gdf.to_file('results.shp')
+    #gdf.to_file('results.shp')
 
-main()
