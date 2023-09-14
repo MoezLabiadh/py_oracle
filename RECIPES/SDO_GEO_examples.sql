@@ -108,7 +108,17 @@ FROM WHSE_CADASTRE.PMBC_PARCEL_FABRIC_POLY_SVW pp,
 WHERE ten.INTRID_SID = XXXX
   AND pp.OWNER_TYPE = 'Private'
   AND SDO_NN(pp.SHAPE, ten.SHAPE, 'sdo_num_res={n_neighbor}' ,1) = 'TRUE'
-   
+
+--intersect table and geometry (point)
+SELECT 
+     WATER_LICENSING_WATERSHED_NAME
+ FROM 
+     WHSE_WATER_MANAGEMENT.WLS_WATER_LIC_WATERSHEDS_SP wsh
+ WHERE 
+     SDO_RELATE (wsh.SHAPE, 
+                 SDO_GEOMETRY('POINT({long} {lat})', 4326),
+                 'mask=ANYINTERACT') = 'TRUE'
+ 
    
    
    
