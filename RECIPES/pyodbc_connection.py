@@ -11,12 +11,10 @@ def get_db_cnxinfo (dbname='BCGW'):
         
     if dbname in data:
         cnxinfo = data[dbname]
-
         return cnxinfo
     
     raise KeyError(f"Database '{dbname}' not found.")
-    
-    
+     
     
 # USE THIS WITHIN DESKTOP
 def connect_to_DB (driver,server,port,dbq, username,password):
