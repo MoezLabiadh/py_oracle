@@ -155,3 +155,13 @@ WHERE a.CROWN_LANDS_FILE= '6403921'
    AND a.DISPOSITION_TRANSACTION_SID = 936716
    AND b.OWNER_TYPE= 'Private'
 ORDER BY ROUND(SDO_GEOM.SDO_DISTANCE(b.SHAPE, a.SHAPE, 0.05),2);
+
+
+-- Use of Agregation function SDO_AGGR_UNION
+SELECT linear_feature_id, feature_source, geometry
+FROM WHSE_BASEMAPPING.FWA_COASTLINES_SP c
+WHERE SDO_ANYINTERACT (c.GEOMETRY, 
+                            (SELECT SDO_AGGR_UNION(SDOAGGRTYPE(lu.GEOMETRY, 1)) AS geom     -- tolerance is 1 map unit
+                             FROM WHSE_LAND_USE_PLANNING.RMP_LANDSCAPE_UNIT_SVW lu WHERE LANDSCAPE_UNIT_NAME IN ('Allison', 'Athlow Bay', 'Beresford', 'Brooks')
+                                )
+                                 ) = 'TRUE';
