@@ -12,7 +12,7 @@ WHERE rownum = 1;
 
 
 
---Check the Geometry TYPESELECT CASE 
+--Check the Geometry TYPE
 SELECT CASE 
       WHEN SDO_GEOMETRY.GET_GTYPE(SHAPE) IN (3,7) THEN 'Polygon'
       ELSE 'Not a Polygon'
