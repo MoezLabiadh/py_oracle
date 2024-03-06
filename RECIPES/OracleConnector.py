@@ -38,7 +38,6 @@ class OracleConnector:
 
 if __name__ == "__main__":
     oracle_connector = OracleConnector()
-    
     oracle_connector.connect_to_db()
     
     #test
