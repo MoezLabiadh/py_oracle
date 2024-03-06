@@ -1,5 +1,6 @@
 import json
 import cx_Oracle
+import pandas as pd
 
 class OracleConnector:
     def __init__(self, dbname='BCGW'):
@@ -35,12 +36,22 @@ class OracleConnector:
             self.connection.close()
             print("....Disconnected from the database")
 
-
-
-
 if __name__ == "__main__":
     oracle_connector = OracleConnector()
     
     oracle_connector.connect_to_db()
     
-    oracle_connector.disconnect_db()
+    #test
+    try:
+        query = """
+                SELECT *
+                FROM WHSE_FOREST_VEGETATION.PEST_INFESTATION_POLY
+                FETCH FIRST 20 ROWS ONLY
+                """
+        df = pd.read_sql(query, oracle_connector.connection)
+
+    except Exception as e:
+        print("Error occurred:", e)
+    
+    finally:
+        oracle_connector.disconnect_db()
