@@ -177,3 +177,13 @@ WHERE SDO_ANYINTERACT (c.GEOMETRY,
                              FROM WHSE_LAND_USE_PLANNING.RMP_LANDSCAPE_UNIT_SVW lu WHERE LANDSCAPE_UNIT_NAME IN ('Allison', 'Athlow Bay', 'Beresford', 'Brooks')
                                 )
                                  ) = 'TRUE';
+
+
+-- Get Planet Lab imagery DATE
+SELECT*
+FROM
+    WHSE_IMAGERY_AND_BASE_MAPS.SPOT_1_5M_IMAGERY_DATE_POLY_SP img
+    JOIN WHSE_TANTALIS.TA_CROWN_TENURES_SVW ten
+        ON SDO_WITHIN_DISTANCE(img.SHAPE, ten.SHAPE, 'distance = 5000m') = 'TRUE'
+             AND ten.CROWN_LANDS_FILE = '1414972'
+;
